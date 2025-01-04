@@ -7,7 +7,7 @@ import { Download } from 'lucide-react';
 import { createZipFile } from './utils/zipUtils';
 
 function App() {
-  const { images, outputFormat, updateImageProgress, updateImageStatus } = useImageStore();
+  const { images, outputFormat, updateImageProgress, updateImageStatus, clearImages } = useImageStore();
 
   const handleConvert = async () => {
     const pendingImages = images.filter((img) => img.status === 'idle');
@@ -54,6 +54,7 @@ function App() {
 
   const hasConvertibleImages = images.some((img) => img.status === 'idle');
   const hasConvertedImages = images.some((img) => img.status === 'done');
+  const hasAnyImages = images.length > 0;
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -88,6 +89,15 @@ function App() {
                 >
                   <Download className="w-4 h-4" />
                   Download All
+                </button>
+              )}
+
+              {hasAnyImages && (
+                <button
+                  onClick={clearImages}
+                  className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                >
+                  Clear
                 </button>
               )}
             </div>

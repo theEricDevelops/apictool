@@ -62,5 +62,14 @@ export const useImageStore = create<ImageStore>((set) => ({
       }),
     }));
   },
-  clearImages: () => set({ images: [] }),
+  clearImages: () => {
+    set((state) => {
+      state.images.forEach((img) => {
+        if (img.convertedFile) {
+          URL.revokeObjectURL(img.convertedFile.url);
+        }
+      });
+      return { images: [] };
+    });
+  },
 }));

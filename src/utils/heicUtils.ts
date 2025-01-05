@@ -1,6 +1,11 @@
 import heic2any from 'heic2any';
 
 export async function getHEICConvertedURL(file: File): Promise<string> {
+  if (typeof window === 'undefined') {
+    throw new Error('heic2any can only be used in the browser');
+  }
+  
+  const heic2any = (await import('heic2any')).default;
   if (!file || file.type !== 'image/heic') {
     throw new Error('Provided file is not a HEIC image');
   }

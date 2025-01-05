@@ -11,9 +11,13 @@ node_modules
 dist
 dist-ssr
 *.local
+.next/*
 
 # Environment Variables
 .env
+
+# Development SSL Certs
+.certificates/*
 
 # Editor directories and files
 .vscode/*

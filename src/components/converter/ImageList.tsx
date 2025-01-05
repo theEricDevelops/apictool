@@ -1,6 +1,6 @@
 import { Download, Trash2, AlertCircle } from 'lucide-react';
-import { useImageStore } from '../store/useImageStore';
-import { formatBytes, getNewFileName, getNewFileSize } from '../utils/utils';
+import { useImageStore } from '@/store/useImageStore';
+import { formatBytes, getNewFileName, getNewFileSize } from '@/utils/utils';
 
 export function ImageList() {
   const { images, removeImage, outputFormat } = useImageStore((state) => ({

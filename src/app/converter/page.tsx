@@ -1,10 +1,12 @@
-import { DropZone } from '../components/DropZone';
-import { FormatSelector } from '../components/FormatSelector';
-import { ImageList } from '../components/ImageList';
-import { useImageStore } from '../store/useImageStore';
-import { convertImage } from '../lib/imageConverter';
+'use client';
+
+import { DropZone } from '@/components/converter/DropZone';
+import { FormatSelector } from '@/components/converter/FormatSelector';
+import { ImageList } from '@/components/converter/ImageList';
+import { useImageStore } from '@/store/useImageStore';
+import { convertImage } from '@/lib/imageConverter';
 import { Download } from 'lucide-react';
-import { createZipFile } from '../utils/zipUtils';
+import { createZipFile } from '@/utils/zipUtils';
 
 function App() {
   const { images, outputFormat, updateImageProgress, updateImageStatus, clearImages } = useImageStore();

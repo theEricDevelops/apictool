@@ -1,8 +1,8 @@
 import { useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload } from 'lucide-react';
-import { useImageStore } from '../store/useImageStore';
-import { cn } from '../utils/utils';
+import { useImageStore } from '@/store/useImageStore';
+import { cn } from '@/utils/utils';
 
 export function DropZone() {
   const addImages = useImageStore((state) => state.addImages);

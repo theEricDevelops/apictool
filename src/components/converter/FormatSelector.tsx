@@ -1,7 +1,9 @@
+'use client';
+
 import { useEffect, useState } from 'react';
-import { useImageStore } from '../store/useImageStore';
-import { OutputFormat } from '../types/image';
-import { isHEICSupported } from '../utils/heicUtils';
+import { useImageStore } from '@/store/useImageStore';
+import { OutputFormat } from '@/types/image';
+import { isHEICSupported } from '@/utils/heicUtils';
 
 const formats: { value: OutputFormat; label: string }[] = [
   { value: 'image/jpeg', label: 'JPEG' },

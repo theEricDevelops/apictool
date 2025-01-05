@@ -39,11 +39,11 @@ export default function Header() {
               <Link href="/" className="text-gray-700 hover:text-gray-900 px-3 py-2">
                 Home
               </Link>
-              <Link href="/about" className="text-gray-700 hover:text-gray-900 px-3 py-2">
+              <Link href="/converter" className="text-gray-700 hover:text-gray-900 px-3 py-2">
                 Converter
               </Link>
-              <Link href="/services" className="text-gray-700 hover:text-gray-900 px-3 py-2">
-                Plans
+              <Link href="/pricing" className="text-gray-700 hover:text-gray-900 px-3 py-2">
+                Pricing
               </Link>
               <Link href="/contact" className="text-gray-700 hover:text-gray-900 px-3 py-2">
                 Contact

@@ -8,9 +8,13 @@ export interface ImageFile {
     name: string;
     size: number;
   };
+  maxWidth: number;
+  maxHeight: number;
   preview: string;
   convertedPreview?: string;
   progress: number;
+  progressive: boolean;
+  quality: number;
   status: 'idle' | 'processing' | 'done' | 'error';
   convertedFile?: {
     url: string;

@@ -1,6 +1,4 @@
-'use client';
-
-import { Auth0Provider } from '@auth0/auth0-react';
+import Providers from '@/components/providers';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import Script from 'next/script';
@@ -11,24 +9,16 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const redirectUri = typeof window !== 'undefined' ? window.location.origin : '';
-
   return (
     <html lang="en">
       <body>
-        <Auth0Provider
-          domain={process.env.NEXT_PUBLIC_AUTH0_DOMAIN || ''}
-          clientId={process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID || ''}
-          authorizationParams={{
-            redirect_uri: redirectUri,
-          }}
-        >
+        <Providers>
           <Header />
-          <main className="pt-24">
+          <main className="pt-16">
             {children}
           </main>
           <Footer />
-        </Auth0Provider>
+        </Providers>
         <Script src="https://unpkg.com/flowbite@1.4.1/dist/flowbite.js"></Script>
       </body>
     </html>

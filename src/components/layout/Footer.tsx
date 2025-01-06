@@ -91,7 +91,7 @@ const Footer = () => {
             <hr className="my-6 border-gray-200 sm:mx-auto dark:border-gray-700 lg:my-8"></hr>
             <div className="text-center">
                 <Link href="#" className="flex items-center justify-center mb-5 text-2xl font-semibold text-gray-900 dark:text-white">
-                    <img src="./images/logo.svg" className="h-6 mr-3 sm:h-9" alt="Landwind Logo" />
+                    <img src="/images/logo.svg" className="h-6 mr-3 sm:h-9" alt="Landwind Logo" />
                     Landwind    
                 </Link>
                 <span className="block text-sm text-center text-gray-500 dark:text-gray-400">© 2021-2022 Landwind™. All Rights Reserved. Built with <Link href="https://flowbite.com" className="text-purple-600 hover:underline dark:text-purple-500">Flowbite</Link> and <Link href="https://tailwindcss.com" className="text-purple-600 hover:underline dark:text-purple-500">Tailwind CSS</Link>. Distributed by <Link href="https://themewagon.com/" className="text-purple-600 hover:underline dark:text-purple-500">ThemeWagon</Link>

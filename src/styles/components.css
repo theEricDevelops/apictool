@@ -1,0 +1,33 @@
+@layer components {
+  /* Common button styles */
+  .btn {
+    @apply px-4 py-2 rounded-md font-medium transition-colors;
+  }
+
+  .btn-primary {
+    @apply w-full px-5 py-3 text-base font-medium text-center text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 sm:w-auto;
+  }
+
+  /* Common layout patterns */
+  .container-padding {
+    @apply px-4 md:px-6 lg:px-8;
+  }
+
+  .section-spacing {
+    @apply py-12 md:py-16 lg:py-20;
+  }
+
+  /* Input with icon */
+  .input-with-icon {
+    @apply relative;
+  }
+
+  .input-icon {
+    @apply absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none;
+  }
+
+  .input-field {
+    @apply w-full pl-10 pr-4 py-2 rounded-md border border-gray-300;
+    @apply focus:ring-2 focus:ring-blue-500 focus:border-transparent;
+  }
+}

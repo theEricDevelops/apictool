@@ -1,17 +1,28 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, forwardRef, useImperativeHandle } from 'react';
 import { useAppState } from '@/hooks/useAppState';
 import { isHEICSupported } from '@/utils/heicUtils';
 import { SUPPORTED_IMAGE_FORMATS } from '@/constants/formats';
+import { OutputFormat } from '@/types/image';
+
+export interface FormatSelectorRef {
+  getSelectedFormat: () => OutputFormat;
+}
 
 const IMAGE_FORMATS: Record<string, string> = SUPPORTED_IMAGE_FORMATS.reduce((formats: Record<string, string>, extension: string) => ({
   ...formats,
   [extension]: extension.split('/')[1].toLowerCase()
 }), {} as Record<string, string>);
 
-export function FormatSelector() {
+export const FormatSelector = forwardRef<FormatSelectorRef>((props, ref) => {
   const [heicSupported, setHeicSupported] = useState(false);
+  const { state, dispatch } = useAppState();
+  const [ formatValue, setFormatValue ] = useState<OutputFormat>(state.outputFormat);
+
+  useImperativeHandle(ref, () => ({
+    getSelectedFormat: () => formatValue
+  }), [formatValue]);
 
   useEffect(() => {
     const checkHEICSupport = async () => {
@@ -21,6 +32,14 @@ export function FormatSelector() {
     checkHEICSupport();
   }, []);
 
+  const setTemporaryFormat = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const newFormat = event.target.value as OutputFormat;
+    if (newFormat === formatValue) return;
+
+    setFormatValue(newFormat);
+    dispatch({ type: 'SET_CAN_CONVERT', payload: true });
+  };
+
   return (
     <div className="flex items-center gap-2">
       <label htmlFor="format" className="text-sm font-medium text-gray-700">
@@ -28,8 +47,8 @@ export function FormatSelector() {
       </label>
       <select
         id="format"
-        value={selectedFormat}
-        onChange={setSelectedFormat}
+        value={formatValue}
+        onChange={setTemporaryFormat}
         className="block w-full max-w-xs rounded-lg border border-gray-300 bg-white p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500"
       >
         {Object.entries(IMAGE_FORMATS)
@@ -42,4 +61,7 @@ export function FormatSelector() {
       </select>
     </div>
   );
-}
+});
+
+FormatSelector.displayName = 'FormatSelector';
+

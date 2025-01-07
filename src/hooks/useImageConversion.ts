@@ -14,14 +14,7 @@ export function useImageConversion() {
     img.status === 'done' && img.convertedFile?.format === outputFormat
   );
 
-  const canStartConversion = images.length > 0 && (
-    images.some(img =>
-      img.status === 'idle' ||
-      img.convertedFile?.format !== selectedFormat
-    )
-  );
-
-  const handleConversion = useCallback(() => {
+  const handleFormatChange = useCallback(() => {
     dispatch({ type: 'SET_OUTPUT_FORMAT', payload: selectedFormat });
   }, [dispatch, selectedFormat]);
 
@@ -82,6 +75,7 @@ export function useImageConversion() {
     }, [dispatch, images, outputFormat]);
 
   const processImages = useCallback(async () => {
+    handleFormatChange();
     const imagesToProcess = images.filter(image => image.status === 'idle');
     if (imagesToProcess.length === 0) return;
 
@@ -90,6 +84,7 @@ export function useImageConversion() {
 
     try {
       isProcessingRef.current = true;
+      dispatch({ type: 'SET_CAN_CONVERT', payload: false });
       const selectedImages = imagesToProcess.slice(0, availableSlots);
 
       if (hasParallelConversion) {
@@ -109,16 +104,17 @@ export function useImageConversion() {
       console.error('Error processing images:', error);
     } finally {
       isProcessingRef.current = false;
+      if (images.some(img => img.status === 'idle' || img.status === 'error')){
+        dispatch({ type: 'SET_CAN_CONVERT', payload: true });
+      }
     }
-  }, [images, activeConversions, hasParallelConversion, dispatch, processImage]);
+  }, [images, activeConversions, handleFormatChange, hasParallelConversion, dispatch, processImage]);
   
   return {
     processImages,
-    handleConversion,
     isProcessing: isProcessingRef.current,
     canStartNewConversion: activeConversions < MAX_CONCURRENT_CONVERSIONS && images.some(img => !['processing', 'done'].includes(img.status)),
     areAllImagesDone,
-    canConvert: canStartConversion,
     selectedFormat,
     setSelectedFormat
   };

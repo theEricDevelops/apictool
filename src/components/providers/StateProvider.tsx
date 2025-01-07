@@ -8,6 +8,7 @@ import { Action } from '@/types/stateActions';
 interface AppState {
   images: ImageFile[];
   outputFormat: OutputFormat;
+  canConvert: boolean;
   settings: {
     compressionQuality: number;
     maxConcurrentProcessing: number;
@@ -16,11 +17,10 @@ interface AppState {
   activeConversions: number;
 }
 
-
-
 const initialState: AppState = {
   images: [],
   outputFormat: 'image/jpeg',
+  canConvert: true,
   settings: {
     compressionQuality: 80,
     maxConcurrentProcessing: 3,
@@ -35,6 +35,13 @@ const reducer = (state: AppState, action: Action): AppState => {
       return {
         ...state,
         outputFormat: action.payload,
+      };
+    }
+
+    case 'SET_CAN_CONVERT': {
+      return {
+        ...state,
+        canConvert: action.payload,
       };
     }
 

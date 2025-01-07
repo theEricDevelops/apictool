@@ -1,29 +1,26 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { DropZone } from '@/components/converter/DropZone';
 import { ImageList } from '@/components/converter/ImageList';
 import { useAppState } from '@/hooks/useAppState';
 import { createZipFile } from '@/utils/zipUtils';
 import { useImageConversion } from '@/hooks/useImageConversion';
-import { useFileHandler } from '@/hooks/useFilehandler';
+import { useFileHandler } from '@/hooks/useFileHandler';
 import { useBlobManager } from '@/hooks/useBlobManager';
-import { FormatSelector } from '@/components/converter/FormatSelector';
+import { FormatSelector, FormatSelectorRef } from '@/components/converter/FormatSelector';
 import { ConversionButtons } from '@/components/converter/ConversionButtons';
 
 export default function ConverterPage() {
   const { state, dispatch } = useAppState();
   const { images, outputFormat, hasParallelConversion } = state;
   const {  
-    canConvert, 
-    areAllImagesDone, 
-    selectedFormat, 
-    setSelectedFormat, 
-    handleConversion,
+    areAllImagesDone,
     processImages
   } = useImageConversion();
   const { handleFileDrop } = useFileHandler();
   const { cleanupBlob, cleanupAllBlobs, isMounted } = useBlobManager();
+  const formatRef = useRef<FormatSelectorRef>(null);
 
   useEffect(() => {
     return () => {
@@ -31,6 +28,14 @@ export default function ConverterPage() {
       cleanupAllBlobs();
     };
   }, [cleanupAllBlobs, isMounted]);
+
+  const handleConversion = async () => {
+    const selectedFormat = formatRef.current?.getSelectedFormat();
+    if (!selectedFormat) return;
+
+    dispatch({ type: 'SET_OUTPUT_FORMAT', payload: selectedFormat });
+    await processImages();
+  };
 
   const handleClearImages = () => {
     cleanupAllBlobs();
@@ -65,7 +70,7 @@ export default function ConverterPage() {
         {images.length > 0 && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <FormatSelector />
+              <FormatSelector ref={formatRef} />
               <div className="flex items-center gap-4">
                 {!hasParallelConversion && images.length > 1 && (
                   <div className="text-sm text-gray-500">
@@ -73,10 +78,10 @@ export default function ConverterPage() {
                   </div>
                 )}
                 <ConversionButtons
-                  onConvert={() => processImages()}
+                  onConvert={handleConversion}
                   onDownload={handleDownloadAll}
                   onClear={handleClearImages}
-                  canConvert={canConvert}
+                  canConvert={state.canConvert}
                   showDownload={areAllImagesDone}
                   doneImagesCount={images.filter(img => img.status === 'done').length}
                 />

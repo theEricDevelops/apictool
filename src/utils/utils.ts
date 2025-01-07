@@ -62,9 +62,9 @@ export function getNewFileSize(originalSize: number, convertedSize: number): str
 }
 
 export function getProcessingStage(progress: number): string {
-  if (progress <= 10) return 'Initializing...';
-  if (progress <= 20) return 'Preparing image...';
-  if (progress <= 80) return 'Compressing...';
-  if (progress <= 95) return 'Converting format...';
-  return 'Finalizing...';
+  if (progress <= 10) return 'Initializing';
+  if (progress <= 20) return 'Preparing';
+  if (progress <= 80) return 'Compressing';
+  if (progress <= 95) return 'Converting';
+  return 'Finalizing';
 }

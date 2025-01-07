@@ -3,6 +3,7 @@ export interface ConvertedFile {
   url: string;
   size: number;
   blob: Blob;
+  format: string;
 }
 
 export interface QueueItem {

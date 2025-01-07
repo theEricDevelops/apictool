@@ -2,12 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import { useAppState } from '@/hooks/useAppState';
-import { OutputFormat } from '@/components/providers/StateProvider';
 import { isHEICSupported } from '@/utils/heicUtils';
+import { SUPPORTED_IMAGE_FORMATS } from '@/constants/formats';
+
+const IMAGE_FORMATS: Record<string, string> = SUPPORTED_IMAGE_FORMATS.reduce((formats: Record<string, string>, extension: string) => ({
+  ...formats,
+  [extension]: extension.split('/')[1].toLowerCase()
+}), {} as Record<string, string>);
 
 export function FormatSelector() {
-  const { state, dispatch } = useAppState();
-  const { outputFormat } = state;
   const [heicSupported, setHeicSupported] = useState(false);
 
   useEffect(() => {
@@ -25,18 +28,17 @@ export function FormatSelector() {
       </label>
       <select
         id="format"
-        value={outputFormat}
-        onChange={(e) => dispatch({ 
-          type: 'SET_OUTPUT_FORMAT', 
-          payload: e.target.value as OutputFormat 
-        })}
+        value={selectedFormat}
+        onChange={setSelectedFormat}
         className="block w-full max-w-xs rounded-lg border border-gray-300 bg-white p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500"
       >
-        <option value="image/jpeg">JPEG</option>
-        <option value="image/gif">GIF</option>
-        <option value="image/png">PNG</option>
-        <option value="image/webp">WebP</option>
-        {heicSupported && <option value="image/heic">HEIC</option>}
+        {Object.entries(IMAGE_FORMATS)
+          .filter(([key]) => key !== 'image/heic' || heicSupported)
+          .map(([key, value]) => (
+          <option key={key} value={key}>
+            {value.toUpperCase()}
+          </option>
+        ))}
       </select>
     </div>
   );

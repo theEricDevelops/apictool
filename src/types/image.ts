@@ -1,6 +1,6 @@
 import type { QueueItem } from "@/types/files";
 
-export type OutputFormat = 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
+export type OutputFormat = 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp' | 'image/avif' | 'image/heic';
 
 export interface ImageFile extends QueueItem {
   maxWidth: number;
@@ -10,6 +10,7 @@ export interface ImageFile extends QueueItem {
   progressive: boolean;
   quality: number;
 }
+
 
 export interface ImageListProps {
   onRemove: (imageId: string) => void;

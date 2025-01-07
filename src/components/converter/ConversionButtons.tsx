@@ -6,6 +6,7 @@ interface ConversionButtonsProps {
   onClear: () => void;
   canConvert: boolean;
   showDownload: boolean;
+  doneImagesCount: number;
 }
 
 export function ConversionButtons({
@@ -13,22 +14,25 @@ export function ConversionButtons({
   onDownload,
   onClear,
   canConvert,
-  showDownload
+  showDownload,
+  doneImagesCount
 }: ConversionButtonsProps) {
   return (
     <div className="flex items-center gap-4">
-      <button
-        onClick={onConvert}
-        disabled={!canConvert}
-        className={`inline-flex items-center px-4 py-2 rounded-lg transition-colors ${
-          canConvert
-            ? 'bg-blue-600 hover:bg-blue-700 text-white'
-            : 'bg-gray-400 cursor-not-allowed text-gray-200'
-        }`}
-      >
-        <ReplaceAll className="w-4 h-4 mr-2" />
-        Convert
-      </button>
+      
+        <button
+          onClick={onConvert}
+          disabled={!canConvert}
+          className={`inline-flex items-center px-4 py-2 rounded-lg transition-colors ${
+            canConvert
+              ? 'bg-blue-600 hover:bg-blue-700 text-white'
+              : 'bg-gray-400 cursor-not-allowed text-gray-200'
+          }`}
+        >
+          <ReplaceAll className="w-4 h-4 mr-2" />
+          Convert
+        </button>
+      
 
       {showDownload && (
         <button
@@ -36,7 +40,7 @@ export function ConversionButtons({
           className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
         >
           <Download className="w-4 h-4 mr-2" />
-          Download All
+          Download{ doneImagesCount > 1 ? ' All' : '' }
         </button>
       )}
 

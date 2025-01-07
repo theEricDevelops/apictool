@@ -1,13 +1,29 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { convertImage } from '@/lib/imageConverter';
-import { useAppState } from './useAppState';
+import { useAppState } from '@/hooks/useAppState';
 
 export function useImageConversion() {
   const { state, dispatch } = useAppState();
-  const { images, outputFormat, settings, hasParallelConversion } = state;
+  const { images, outputFormat, hasParallelConversion } = state;
+  const [ selectedFormat, setSelectedFormat ] = useState(outputFormat);
   const MAX_CONCURRENT_CONVERSIONS = 3;
   const activeConversions = images.filter(img => img.status === 'processing').length;
   const isProcessingRef = useRef(false);
+
+  const areAllImagesDone = images.length > 0 && images.every(img => 
+    img.status === 'done' && img.convertedFile?.format === outputFormat
+  );
+
+  const canStartConversion = images.length > 0 && (
+    images.some(img =>
+      img.status === 'idle' ||
+      img.convertedFile?.format !== selectedFormat
+    )
+  );
+
+  const handleConversion = useCallback(() => {
+    dispatch({ type: 'SET_OUTPUT_FORMAT', payload: selectedFormat });
+  }, [dispatch, selectedFormat]);
 
   const processImage = useCallback(async (imageId: string) => {
     const image = images.find((img) => img.id === imageId);
@@ -47,6 +63,7 @@ export function useImageConversion() {
           convertedFile: {
             url: result.url,
             size: result.size,
+            format: outputFormat,
             blob: result.blob
           }
         }
@@ -62,7 +79,7 @@ export function useImageConversion() {
           }
         });
       }
-    }, [dispatch, images, outputFormat, settings.maxConcurrentProcessing]);
+    }, [dispatch, images, outputFormat]);
 
   const processImages = useCallback(async () => {
     const imagesToProcess = images.filter(image => image.status === 'idle');
@@ -94,9 +111,15 @@ export function useImageConversion() {
       isProcessingRef.current = false;
     }
   }, [images, activeConversions, hasParallelConversion, dispatch, processImage]);
+  
   return {
     processImages,
+    handleConversion,
     isProcessing: isProcessingRef.current,
-    canStartNewConversion: activeConversions < MAX_CONCURRENT_CONVERSIONS
+    canStartNewConversion: activeConversions < MAX_CONCURRENT_CONVERSIONS && images.some(img => !['processing', 'done'].includes(img.status)),
+    areAllImagesDone,
+    canConvert: canStartConversion,
+    selectedFormat,
+    setSelectedFormat
   };
 }

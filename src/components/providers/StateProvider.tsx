@@ -3,7 +3,7 @@
 import React, { createContext, useReducer, useCallback } from 'react';
 import { generatePreview } from '@/utils/utils';
 import { ImageFile, OutputFormat } from '@/types/image';
-import { QueueItem, ConvertedFile } from '@/types/files';
+import { Action } from '@/types/stateActions';
 
 interface AppState {
   images: ImageFile[];
@@ -16,16 +16,7 @@ interface AppState {
   activeConversions: number;
 }
 
-type Action =
-  | { type: 'SET_OUTPUT_FORMAT'; payload: OutputFormat }
-  | { type: 'INCREMENT_ACTIVE_CONVERSIONS' }
-  | { type: 'DECREMENT_ACTIVE_CONVERSIONS' }
-  | { type: 'ADD_IMAGES'; payload: ImageFile[] }
-  | { type: 'ADD_IMAGE'; payload: ImageFile }
-  | { type: 'REMOVE_IMAGE'; payload: string }
-  | { type: 'UPDATE_IMAGE_PROGRESS'; payload: { id: string; progress: number } }
-  | { type: 'UPDATE_IMAGE_STATUS'; payload: { id: string; status: QueueItem['status']; convertedFile?: ConvertedFile; error?: string }}
-  | { type: 'CLEAR_IMAGES' };
+
 
 const initialState: AppState = {
   images: [],

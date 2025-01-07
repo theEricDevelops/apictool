@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { DropZone } from '@/components/converter/DropZone';
 import { ImageList } from '@/components/converter/ImageList';
 import { useAppState } from '@/hooks/useAppState';
@@ -14,11 +14,16 @@ import { ConversionButtons } from '@/components/converter/ConversionButtons';
 export default function ConverterPage() {
   const { state, dispatch } = useAppState();
   const { images, outputFormat, hasParallelConversion } = state;
-  const { processImages, canStartNewConversion } = useImageConversion();
+  const {  
+    canConvert, 
+    areAllImagesDone, 
+    selectedFormat, 
+    setSelectedFormat, 
+    handleConversion,
+    processImages
+  } = useImageConversion();
   const { handleFileDrop } = useFileHandler();
   const { cleanupBlob, cleanupAllBlobs, isMounted } = useBlobManager();
-
-  const areAllImagesDone = images.length > 0 && images.every(img => img.status === 'done');
 
   useEffect(() => {
     return () => {
@@ -71,8 +76,9 @@ export default function ConverterPage() {
                   onConvert={() => processImages()}
                   onDownload={handleDownloadAll}
                   onClear={handleClearImages}
-                  canConvert={canStartNewConversion}
+                  canConvert={canConvert}
                   showDownload={areAllImagesDone}
+                  doneImagesCount={images.filter(img => img.status === 'done').length}
                 />
               </div>
               </div>

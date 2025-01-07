@@ -1,3 +1,4 @@
+
 /**
  * Image processing utility functions for color and pixel manipulation
  */

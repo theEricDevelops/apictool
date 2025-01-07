@@ -1,8 +1,8 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { OutputFormat } from '../types/image';
+import { OutputFormat } from '../types/image.types';
 import imageCompression from 'browser-image-compression';
-import { isHEIC, convertHEICToImage } from './heicUtils';
+import { isHEIC, convertHEICToImage } from './heic.utils';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));

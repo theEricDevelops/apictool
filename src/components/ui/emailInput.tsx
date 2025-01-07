@@ -1,6 +1,6 @@
 // components/ui/EmailInput.tsx
 
-import { EmailInputProps } from "@/types/components/emailInput";
+import { EmailInputProps } from "@/types/components/emailInput.types";
 
 const EmailInput = ({
   icon,

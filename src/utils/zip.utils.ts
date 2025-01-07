@@ -1,6 +1,6 @@
 import { BlobWriter, ZipWriter } from '@zip.js/zip.js';
-import { OutputFormat } from '@/types/image';
-import { QueueItem } from '@/types/files';
+import { OutputFormat } from '@/types/image.types';
+import { QueueItem } from '@/types/file.types';
 import { getNewFileName } from '@/utils/utils';
 
 export async function createZipFile(images: QueueItem[], outputFormat: OutputFormat): Promise<Blob> {

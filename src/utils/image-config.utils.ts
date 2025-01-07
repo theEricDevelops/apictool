@@ -1,5 +1,5 @@
-import { fileExists, readFile } from '@/utils/fileSystem';
-import type { OutputFormat } from '@/types/image';
+import { fileExists, readFile } from '@/utils/file-system.utils';
+import type { OutputFormat } from '@/types/image.types';
 
 // Create a type that only includes the config-related properties we need
 export type ImageConfig = {

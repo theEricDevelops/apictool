@@ -1,5 +1,5 @@
 import { describe, expect, test } from '@jest/globals';
-import { validatePath, normalizePath } from '@/utils/pathValidator';
+import { validatePath, normalizePath } from '@/utils/path-validator.utils';
 
 describe('PathValidator', () => {
   describe('validatePath', () => {

@@ -2,9 +2,9 @@
 
 import { useEffect, useState, forwardRef, useImperativeHandle } from 'react';
 import { useAppState } from '@/hooks/useAppState';
-import { isHEICSupported } from '@/utils/heicUtils';
-import { SUPPORTED_IMAGE_FORMATS } from '@/constants/formats';
-import { OutputFormat } from '@/types/image';
+import { isHEICSupported } from '@/utils/heic.utils';
+import { SUPPORTED_IMAGE_FORMATS } from '@/constants/format.constants';
+import { OutputFormat } from '@/types/image.types';
 
 export interface FormatSelectorRef {
   getSelectedFormat: () => OutputFormat;

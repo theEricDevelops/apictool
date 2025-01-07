@@ -1,4 +1,4 @@
-import type { QueueItem } from "@/types/files";
+import type { QueueItem } from "@/types/file.types";
 
 export type OutputFormat = 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp' | 'image/avif' | 'image/heic';
 

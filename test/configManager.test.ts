@@ -1,7 +1,7 @@
 import { describe, expect, test, jest } from '@jest/globals';
-import { loadConfig, validateConfig, type ImageConfig } from '@/utils/configManager';
-import { fileExists, readFile } from '@/utils/fileSystem';
-import type { OutputFormat } from '@/types/image';
+import { loadConfig, validateConfig, type ImageConfig } from '@/utils/image-config.utils';
+import { fileExists, readFile } from '@/utils/file-system.utils';
+import type { OutputFormat } from '@/types/image.types';
 
 // Create mock functions
 const mockFileExists = jest.fn();

@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import { DropZone } from '@/components/converter/DropZone';
 import { ImageList } from '@/components/converter/ImageList';
 import { useAppState } from '@/hooks/useAppState';
-import { createZipFile } from '@/utils/zipUtils';
+import { createZipFile } from '@/utils/zip.utils';
 import { useImageConversion } from '@/hooks/useImageConversion';
 import { useFileHandler } from '@/hooks/useFileHandler';
 import { useBlobManager } from '@/hooks/useBlobManager';
@@ -13,7 +13,7 @@ import { ConversionButtons } from '@/components/converter/ConversionButtons';
 
 export default function ConverterPage() {
   const { state, dispatch } = useAppState();
-  const { images, outputFormat, hasParallelConversion } = state;
+  const { images, outputFormat, userTier } = state;
   const {  
     areAllImagesDone,
     processImages
@@ -72,7 +72,7 @@ export default function ConverterPage() {
             <div className="flex items-center justify-between">
               <FormatSelector ref={formatRef} />
               <div className="flex items-center gap-4">
-                {!hasParallelConversion && images.length > 1 && (
+                { userTier === 'tier1' && images.length > 1 && (
                   <div className="text-sm text-gray-500">
                     ⚡️ Upgrade to convert multiple images simultaneously
                   </div>

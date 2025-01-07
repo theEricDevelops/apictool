@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import type { ImageFile } from '@/types/image';
+import type { ImageFile } from '@/types/image.types';
 import { useAppState } from './useAppState';
 import { useBlobManager } from './useBlobManager';
 

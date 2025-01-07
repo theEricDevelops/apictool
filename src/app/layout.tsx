@@ -2,7 +2,7 @@ import Providers from '@/components/providers';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import Script from 'next/script';
-import '@/styles/globals.css';
+import '@/styles/global.styles.css';
 
 export default function RootLayout({
   children,

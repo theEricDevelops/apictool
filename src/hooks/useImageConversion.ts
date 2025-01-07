@@ -1,12 +1,13 @@
 import { useCallback, useRef, useState } from 'react';
-import { convertImage } from '@/lib/imageConverter';
+import { convertImage } from '@/lib/image-converter.lib';
 import { useAppState } from '@/hooks/useAppState';
+import { TIER_LIMITS, DEFAULT_USER_TIER } from '@/constants/tier.constants';
 
 export function useImageConversion() {
   const { state, dispatch } = useAppState();
-  const { images, outputFormat, hasParallelConversion } = state;
+  const { images, outputFormat, userTier = DEFAULT_USER_TIER } = state;
   const [ selectedFormat, setSelectedFormat ] = useState(outputFormat);
-  const MAX_CONCURRENT_CONVERSIONS = 3;
+  const MAX_CONCURRENT_CONVERSIONS = TIER_LIMITS[userTier];
   const activeConversions = images.filter(img => img.status === 'processing').length;
   const isProcessingRef = useRef(false);
 
@@ -24,6 +25,8 @@ export function useImageConversion() {
       console.error(`Image with id ${imageId} not found`);
       return;
     }
+
+    dispatch({ type: 'INCREMENT_ACTIVE_CONVERSIONS' });
 
     dispatch({
       type: 'UPDATE_IMAGE_STATUS',
@@ -71,44 +74,98 @@ export function useImageConversion() {
             error: error instanceof Error ? error.message : 'Conversion failed'
           }
         });
+      } finally {
+        dispatch({ type: 'DECREMENT_ACTIVE_CONVERSIONS' });
       }
-    }, [dispatch, images, outputFormat]);
+    }, [dispatch, images, outputFormat]
+  );
 
+  const processNextImage = useCallback(async () => {
+    // Debug current state
+    console.log('Processing Status:', images.map(img => ({
+      id: img.id,
+      name: img.file.name,
+      status: img.status,
+      activeConversions
+    })));
+
+    if (activeConversions >= MAX_CONCURRENT_CONVERSIONS) {
+      console.log('🛑 Max conversions reached:', {
+        active: activeConversions,
+        max: MAX_CONCURRENT_CONVERSIONS
+      });
+      return;
+    }
+
+    const nextImage = images.find(image => ['idle', 'error'].includes(image.status));
+    if (!nextImage) {
+      console.log('⏹️ No next image found. Current queue:', 
+        images.map(img => ({
+          id: img.id,
+          name: img.file.name,
+          status: img.status
+        }))
+      );
+      return;
+    }
+
+    console.log('▶️ Starting next image:', {
+      id: nextImage.id,
+      name: nextImage.file.name,
+      status: nextImage.status
+    });
+
+    await processImage(nextImage.id);
+
+    // Debug state after processing
+    console.log('✅ After processing:', {
+      id: nextImage.id,
+      name: nextImage.file.name,
+      newStatus: images.find(img => img.id === nextImage.id)?.status,
+      activeConversions
+    });
+
+  }, [images, activeConversions, MAX_CONCURRENT_CONVERSIONS, processImage]);
+  
   const processImages = useCallback(async () => {
-    handleFormatChange();
-    const imagesToProcess = images.filter(image => image.status === 'idle');
-    if (imagesToProcess.length === 0) return;
+    console.log('🎬 Starting processImages with:', {
+      totalImages: images.length,
+      activeConversions,
+      maxConcurrent: MAX_CONCURRENT_CONVERSIONS,
+      imageStatuses: images.map(img => ({
+        id: img.id,
+        status: img.status
+      }))
+    });
 
-    const availableSlots = MAX_CONCURRENT_CONVERSIONS - activeConversions;
-    if (availableSlots <= 0) return;
+    handleFormatChange();
 
     try {
       isProcessingRef.current = true;
       dispatch({ type: 'SET_CAN_CONVERT', payload: false });
-      const selectedImages = imagesToProcess.slice(0, availableSlots);
 
-      if (hasParallelConversion) {
-        await Promise.all(selectedImages.map(async (image) => {
-          dispatch({ type: 'INCREMENT_ACTIVE_CONVERSIONS' });
-          await processImage(image.id);
-          dispatch({ type: 'DECREMENT_ACTIVE_CONVERSIONS' });
-        }));
-      } else {
-        for (const image of selectedImages) {
-          dispatch({ type: 'INCREMENT_ACTIVE_CONVERSIONS' });
-          await processImage(image.id);
-          dispatch({ type: 'DECREMENT_ACTIVE_CONVERSIONS' });
-        }
-      }
+      const initialPromises = Array.from({ length: MAX_CONCURRENT_CONVERSIONS }, () => 
+        processNextImage()
+      )
+      
+      await Promise.all(initialPromises);
+
     } catch (error) {
-      console.error('Error processing images:', error);
+      console.error('❌ Error processing images:', error);
     } finally {
       isProcessingRef.current = false;
       if (images.some(img => img.status === 'idle' || img.status === 'error')){
         dispatch({ type: 'SET_CAN_CONVERT', payload: true });
       }
+      console.log('🏁 ProcessImages finished. Final status:', 
+        images.map(img => ({
+          id: img.id,
+          name: img.file.name,
+          status: img.status
+        }))
+      );
     }
-  }, [images, activeConversions, handleFormatChange, hasParallelConversion, dispatch, processImage]);
+  }, [MAX_CONCURRENT_CONVERSIONS, activeConversions, images, handleFormatChange, dispatch, processNextImage]);
   
   return {
     processImages,

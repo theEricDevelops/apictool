@@ -8,7 +8,7 @@ import {
   getNewFileSize,
   getProcessingStage 
 } from '@/utils/utils';
-import type { ImageListProps } from '@/types/image';
+import type { ImageListProps } from '@/types/image.types';
 
 export const ImageList: React.FC<ImageListProps> = ({ onRemove }) => {
   const { state } = useAppState();

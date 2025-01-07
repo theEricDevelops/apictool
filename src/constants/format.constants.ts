@@ -1,4 +1,4 @@
-import { OutputFormat } from '@/types/image';
+import { OutputFormat } from '@/types/image.types';
 
 export const SUPPORTED_IMAGE_FORMATS: OutputFormat[] = [
   'image/jpeg',

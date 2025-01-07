@@ -2,22 +2,12 @@
 
 import React, { createContext, useReducer, useCallback } from 'react';
 import { generatePreview } from '@/utils/utils';
-import { ImageFile, OutputFormat } from '@/types/image';
-import { Action } from '@/types/stateActions';
-
-interface AppState {
-  images: ImageFile[];
-  outputFormat: OutputFormat;
-  canConvert: boolean;
-  settings: {
-    compressionQuality: number;
-    maxConcurrentProcessing: number;
-  };
-  hasParallelConversion?: boolean;
-  activeConversions: number;
-}
+import { ImageFile } from '@/types/image.types';
+import type { AppState, Action } from '@/types/state.types'
+import { DEFAULT_USER_TIER } from '@/constants/tier.constants';
 
 const initialState: AppState = {
+  user: null,
   images: [],
   outputFormat: 'image/jpeg',
   canConvert: true,
@@ -25,8 +15,9 @@ const initialState: AppState = {
     compressionQuality: 80,
     maxConcurrentProcessing: 3,
   },
-  hasParallelConversion: true, // Default to false for free tier
+  userTier: DEFAULT_USER_TIER,
   activeConversions: 0,
+  conversionStatus: 'idle',
 };
 
 const reducer = (state: AppState, action: Action): AppState => {
@@ -35,6 +26,13 @@ const reducer = (state: AppState, action: Action): AppState => {
       return {
         ...state,
         outputFormat: action.payload,
+      };
+    }
+
+    case 'SET_CONVERSION_STATUS': {
+      return {
+        ...state,
+        conversionStatus: action.payload,
       };
     }
 

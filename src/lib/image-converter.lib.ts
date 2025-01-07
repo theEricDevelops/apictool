@@ -1,9 +1,9 @@
 import imageCompression from 'browser-image-compression';
-import { OutputFormat } from '@/types/image';
-import { ConvertedFile } from '@/types/files';
-import { isHEIC, convertHEICToImage } from '@/utils/heicUtils';
-import { isSVG, convertSVGToImage } from '@/utils/svgUtils';
-import { reduceColors, calculateOptimalDimensions } from '@/utils/imageProcessingUtils';
+import { OutputFormat } from '@/types/image.types';
+import { ConvertedFile } from '@/types/file.types';
+import { isHEIC, convertHEICToImage } from '@/utils/heic.utils';
+import { isSVG, convertSVGToImage } from '@/utils/svg.utils';
+import { reduceColors, calculateOptimalDimensions } from '@/utils/image-processing.utils';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -152,11 +152,14 @@ export async function convertImage(
         const url = URL.createObjectURL(blob);
         console.log('Created blob URL:', url);
         
-        return { url, size: blob.size, blob };
+        return { url, size: blob.size, blob, format };
         
-      } catch (conversionError) {
+      } catch (conversionError: unknown) {
         console.error('Format conversion failed:', conversionError);
-        throw new Error(`Format conversion failed: ${conversionError.message}`);
+        if (conversionError instanceof Error) {
+          throw new Error(`Format conversion failed: ${conversionError.message}`);
+        }
+        throw new Error('Format conversion failed');
       }
     } else {
       console.log('No format conversion needed');
@@ -167,7 +170,8 @@ export async function convertImage(
       return { 
         url,
         size: processedFile.size,
-        blob: processedFile
+        blob: processedFile,
+        format: processedFile.type as OutputFormat
       };
     }
   } catch (error) {

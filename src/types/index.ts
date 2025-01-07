@@ -1,3 +1,3 @@
 // types/index.ts
 
-export * from './components/emailInput';
+export * from './components/emailInput.types';

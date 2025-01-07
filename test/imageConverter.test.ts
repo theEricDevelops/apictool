@@ -1,5 +1,5 @@
-import { convertImage } from '@/lib/imageConverter';
-import { convertHEICIfNeeded } from '@/utils/heicUtils';
+import { convertImage } from '@/lib/image-converter.lib';
+import { convertHEICIfNeeded } from '@/utils/heic.utils';
 
 jest.mock('../utils/heicUtils', () => ({
   convertHEICIfNeeded: jest.fn(file => Promise.resolve(file))

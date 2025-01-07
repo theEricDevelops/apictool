@@ -4,7 +4,7 @@ import { useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload } from 'lucide-react';
 import { cn } from '@/utils/utils';
-import type { DropZoneProps } from '@/types/files';
+import type { DropZoneProps } from '@/types/file.types';
 
 export const DropZone: React.FC<DropZoneProps> = ({ onDrop: handleDrop }) => {
 

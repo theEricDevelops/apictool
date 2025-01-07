@@ -3,11 +3,11 @@
 import { useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload } from 'lucide-react';
-import { useAppState } from '@/hooks/useAppState';
 import { cn } from '@/utils/utils';
+import type { DropZoneProps } from '@/types/files';
 
-export function DropZone() {
-  const { dispatch } = useAppState();
+export const DropZone: React.FC<DropZoneProps> = ({ onDrop: handleDrop }) => {
+
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
       console.log('Files dropped:', acceptedFiles.map(file => ({
@@ -17,9 +17,9 @@ export function DropZone() {
         lastModified: new Date(file.lastModified).toISOString()
       })));
 
-      dispatch({ type: 'ADD_IMAGES', payload: acceptedFiles });
+      handleDrop(acceptedFiles);
     },
-    [dispatch]
+    [handleDrop]
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({

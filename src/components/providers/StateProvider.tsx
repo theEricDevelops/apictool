@@ -2,22 +2,26 @@
 
 import React, { createContext, useReducer, useCallback } from 'react';
 import { generatePreview } from '@/utils/utils';
-import { OutputFormat } from '@/types/image';
+import { ImageFile, OutputFormat } from '@/types/image';
 import { QueueItem, ConvertedFile } from '@/types/files';
 
 interface AppState {
-  images: QueueItem[];
+  images: ImageFile[];
   outputFormat: OutputFormat;
   settings: {
     compressionQuality: number;
     maxConcurrentProcessing: number;
   };
+  hasParallelConversion?: boolean;
+  activeConversions: number;
 }
 
 type Action =
   | { type: 'SET_OUTPUT_FORMAT'; payload: OutputFormat }
-  | { type: 'ADD_IMAGES'; payload: File[] }
-  | { type: 'ADD_IMAGE'; payload: QueueItem }
+  | { type: 'INCREMENT_ACTIVE_CONVERSIONS' }
+  | { type: 'DECREMENT_ACTIVE_CONVERSIONS' }
+  | { type: 'ADD_IMAGES'; payload: ImageFile[] }
+  | { type: 'ADD_IMAGE'; payload: ImageFile }
   | { type: 'REMOVE_IMAGE'; payload: string }
   | { type: 'UPDATE_IMAGE_PROGRESS'; payload: { id: string; progress: number } }
   | { type: 'UPDATE_IMAGE_STATUS'; payload: { id: string; status: QueueItem['status']; convertedFile?: ConvertedFile; error?: string }}
@@ -30,6 +34,8 @@ const initialState: AppState = {
     compressionQuality: 80,
     maxConcurrentProcessing: 3,
   },
+  hasParallelConversion: true, // Default to false for free tier
+  activeConversions: 0,
 };
 
 const reducer = (state: AppState, action: Action): AppState => {
@@ -41,26 +47,30 @@ const reducer = (state: AppState, action: Action): AppState => {
       };
     }
 
-    case 'ADD_IMAGES': {
-      const newImages = action.payload.map((file) => {
-        console.log('Adding to queue:', {
-          name: file.name,
-          type: file.type,
-          size: file.size
-        });
+    case 'INCREMENT_ACTIVE_CONVERSIONS':
+      return {
+        ...state,
+        activeConversions: state.activeConversions + 1,
+      };
     
-        return {
-          id: crypto.randomUUID(),
-          file: {
-            contents: file,
-            format: file.type,
-            name: file.name,
-            size: file.size,
-          },
-          preview: '',
-          status: 'idle' as const,
-          progress: 0,
-        };
+    case 'DECREMENT_ACTIVE_CONVERSIONS':
+      return {
+        ...state,
+        activeConversions: state.activeConversions - 1,
+      };
+
+    case 'ADD_IMAGES': {
+      const newImages = action.payload.map((image: ImageFile) => {
+        console.log('Adding to queue:', {
+          name: image.file.name,
+          type: image.file.format,
+          size: image.file.size,
+          maxWidth: image.maxWidth,
+          maxHeight: image.maxHeight,
+          quality: image.quality,
+          progressive: image.progressive
+        });
+        return image;
       });
     
       return {
@@ -145,22 +155,27 @@ export const StateProvider: React.FC<{children: React.ReactNode}> = ({ children 
     if (action.type === 'ADD_IMAGES') {
       if (typeof window === 'undefined') return;
 
-      await Promise.all(action.payload.map(async (file) => {
+      await Promise.all(action.payload.map(async (image: ImageFile) => {
         try {
-          const preview = await generatePreview(file);
+          const preview = await generatePreview(image.file.contents);
           const id = crypto.randomUUID();
 
-          const queueItem: QueueItem = {
+          const queueItem: ImageFile = {
             id,
             file: {
-              contents: file,
-              format: file.type,
-              name: file.name,
-              size: file.size,
+              contents: image.file.contents,
+              format: image.file.format,
+              name: image.file.name,
+              size: image.file.size,
+              url: image.file.url
             },
             preview,
             status: 'idle',
             progress: 0,
+            maxWidth: image.maxWidth,
+            maxHeight: image.maxHeight,
+            progressive: image.progressive,
+            quality: image.quality,
           };
 
           dispatchBase({
@@ -174,15 +189,20 @@ export const StateProvider: React.FC<{children: React.ReactNode}> = ({ children 
             payload: {
               id: crypto.randomUUID(),
               file: {
-                contents: file,
-                format: file.type,
-                name: file.name,
-                size: file.size,
+                contents: image.file.contents,
+                format: image.file.format,
+                name: image.file.name,
+                size: image.file.size,
+                url: image.file.url
               },
               preview: '',
               status: 'error',
               progress: 0,
-              error: 'Failed to generate preview'
+              error: 'Failed to generate preview',
+              maxWidth: image.maxWidth,
+              maxHeight: image.maxHeight,
+              progressive: image.progressive,
+              quality: image.quality,
             },
           });
         }

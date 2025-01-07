@@ -8,10 +8,15 @@ import {
   getNewFileSize,
   getProcessingStage 
 } from '@/utils/utils';
+import type { ImageListProps } from '@/types/image';
 
-export function ImageList() {
-  const { state, dispatch } = useAppState();
+export const ImageList: React.FC<ImageListProps> = ({ onRemove }) => {
+  const { state } = useAppState();
   const { images: processingQueue } = state;
+
+  const handleRemove = (imageId: string) => {
+    onRemove(imageId);
+  };
 
   if (processingQueue.length === 0) return null;
 
@@ -85,10 +90,7 @@ export function ImageList() {
           )}
             
             <button
-              onClick={() => dispatch({ 
-                type: 'REMOVE_IMAGE', 
-                payload: item.id 
-              })}
+              onClick={() => handleRemove(item.id)}
               className="p-2 text-red-600 hover:text-red-700 rounded-full hover:bg-red-50"
             >
               <Trash2 className="w-5 h-5" />

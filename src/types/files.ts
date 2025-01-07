@@ -12,10 +12,15 @@ export interface QueueItem {
     format: string;
     name: string;
     size: number;
+    url: string;
   };
   preview: string;
   status: 'idle' | 'processing' | 'done' | 'error';
   progress: number;
   convertedFile?: ConvertedFile;
   error?: string;
+}
+
+export interface DropZoneProps {
+  onDrop: (acceptedFiles: File[]) => void;
 }

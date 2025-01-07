@@ -10,3 +10,7 @@ export interface ImageFile extends QueueItem {
   progressive: boolean;
   quality: number;
 }
+
+export interface ImageListProps {
+  onRemove: (imageId: string) => void;
+}

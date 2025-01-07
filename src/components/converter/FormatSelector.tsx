@@ -1,50 +1,42 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useImageStore } from '@/store/useImageStore';
-import { OutputFormat } from '@/types/image';
+import { useAppState } from '@/hooks/useAppState';
+import { OutputFormat } from '@/components/providers/StateProvider';
 import { isHEICSupported } from '@/utils/heicUtils';
 
-const formats: { value: OutputFormat; label: string }[] = [
-  { value: 'image/jpeg', label: 'JPEG' },
-  { value: 'image/png', label: 'PNG' },
-  { value: 'image/gif', label: 'GIF' },
-  { value: 'image/webp', label: 'WebP' },
-  { value: 'image/avif', label: 'AVIF' },
-  //{ value: 'image/heic', label: 'HEIC' }, Checking for this later.
-];
-
 export function FormatSelector() {
-  const { outputFormat, setOutputFormat } = useImageStore((state) => ({
-    outputFormat: state.outputFormat,
-    setOutputFormat: state.setOutputFormat,
-  }));
-
+  const { state, dispatch } = useAppState();
+  const { outputFormat } = state;
   const [heicSupported, setHeicSupported] = useState(false);
 
   useEffect(() => {
-    isHEICSupported().then(setHeicSupported);
+    const checkHEICSupport = async () => {
+      const supported = await isHEICSupported();
+      setHeicSupported(supported);
+    };
+    checkHEICSupport();
   }, []);
 
   return (
     <div className="flex items-center gap-2">
       <label htmlFor="format" className="text-sm font-medium text-gray-700">
-        Output Format:
+        Convert to:
       </label>
       <select
         id="format"
         value={outputFormat}
-        onChange={(e) => setOutputFormat(e.target.value as OutputFormat)}
-        className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        onChange={(e) => dispatch({ 
+          type: 'SET_OUTPUT_FORMAT', 
+          payload: e.target.value as OutputFormat 
+        })}
+        className="block w-full max-w-xs rounded-lg border border-gray-300 bg-white p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500"
       >
-        {formats.map((format) => (
-          <option key={format.value} value={format.value}>
-            {format.label}
-          </option>
-        ))}
-        {heicSupported && (
-          <option value="image/heic">HEIC</option>
-        )}
+        <option value="image/jpeg">JPEG</option>
+        <option value="image/gif">GIF</option>
+        <option value="image/png">PNG</option>
+        <option value="image/webp">WebP</option>
+        {heicSupported && <option value="image/heic">HEIC</option>}
       </select>
     </div>
   );

@@ -1,24 +1,62 @@
+import { useCallback } from 'react';
+import { useAppState } from '@/hooks/useAppState';
 import { convertImage } from '../lib/imageConverter';
-import { useImageStore } from '../store/useImageStore';
 
-export async function startConversion(imageId: string) {
-  const { images, outputFormat, updateImageStatus, updateImageProgress } = useImageStore.getState();
+export function useImageConversion() {
+  const { state, dispatch } = useAppState();
+  const { images, outputFormat, settings } = state;
+
+  const startConversion = useCallback(async (imageId: string) => {
   const image = images.find((img) => img.id === imageId);
   if (!image) return;
 
-  updateImageStatus(image.id, 'processing');
-  console.log('startConversion called for:', imageId);
+    const processingImages = images.filter(img => img.status === 'processing');
+    if (processingImages.length >= settings.maxConcurrentProcessing) {
+      console.log('Too many concurrent conversions, waiting...');
+      return;
+    }
 
   try {
+    dispatch({
+      type: 'UPDATE_IMAGE_STATUS',
+      payload: { id: imageId, status: 'processing' }
+    });
+
     const result = await convertImage(
           image.file.contents,
           outputFormat,
-          (progress) => updateImageProgress(image.id, progress)
+      (progress) => {
+          if (progress % 10 === 0) {
+        dispatch({
+          type: 'UPDATE_IMAGE_PROGRESS',
+          payload: { id: imageId, progress }
+        });
+      }
+        }
         );
-    console.log('Image successfully converted => size:', result.size);
-    updateImageStatus(image.id, 'done', { url: result.url, size: result.size }, undefined);
+
+    dispatch({
+      type: 'UPDATE_IMAGE_STATUS',
+      payload: {
+        id: imageId,
+        status: 'done',
+        convertedFile: {
+            url: result.url,
+            size: result.size
+        }
+      }
+    });
   } catch (error) {
-    console.error('Conversion error:', error);
-    updateImageStatus(image.id, 'error', undefined, (error as Error).message);
+    dispatch({
+      type: 'UPDATE_IMAGE_STATUS',
+      payload: {
+        id: imageId,
+        status: 'error',
+        error: error instanceof Error ? error.message : 'Conversion failed'
   }
+    });
+}
+  }, [dispatch, images, outputFormat, settings.maxConcurrentProcessing]);
+
+  return { startConversion };
 }

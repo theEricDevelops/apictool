@@ -1,48 +1,71 @@
 'use client';
 
 import { DropZone } from '@/components/converter/DropZone';
-import { FormatSelector } from '@/components/converter/FormatSelector';
 import { ImageList } from '@/components/converter/ImageList';
-import { useImageStore } from '@/store/useImageStore';
+import { useAppState } from '@/hooks/useAppState';
 import { convertImage } from '@/lib/imageConverter';
-import { Download } from 'lucide-react';
+import { Download, ReplaceAll, Trash2 } from 'lucide-react';
+import type { OutputFormat } from '@/types/image';
 import { createZipFile } from '@/utils/zipUtils';
 
-function App() {
-  const { images, outputFormat, updateImageProgress, updateImageStatus, clearImages } = useImageStore();
-
+export default function ConverterPage() {
+  const { state, dispatch } = useAppState();
+  const { images, outputFormat } = state;
+  
   const handleConvert = async () => {
-    const pendingImages = images.filter((img) => img.status === 'idle');
-    
-    for (const image of pendingImages) {
+    for (const image of images) {
+      if (image.status !== 'idle') continue;
+
       try {
-        updateImageStatus(image.id, 'processing');
-        const convertedUrl = await convertImage(
+        dispatch({
+          type: 'UPDATE_IMAGE_STATUS',
+          payload: { id: image.id, status: 'processing' }
+        });
+        const result = await convertImage(
           image.file.contents,
           outputFormat,
-          (progress) => updateImageProgress(image.id, progress)
+          (progress) => {
+            dispatch({
+              type: 'UPDATE_IMAGE_PROGRESS',
+              payload: { id: image.id, progress }
+            });
+          }
         );
-        updateImageStatus(image.id, 'done', convertedUrl);
-      } catch (error) {
-        updateImageStatus(
-          image.id,
-          'error',
-          undefined,
-          error instanceof Error ? error.message : 'Unknown error'
-        );
+
+        const url = URL.createObjectURL(result.blob);
+
+        dispatch({
+          type: 'UPDATE_IMAGE_STATUS',
+          payload: {
+            id: image.id,
+            status: 'done',
+            convertedFile: {
+              url: url,
+              size: result.size,
+              blob: result.blob
+            }
+          }
+        });
+    } catch (error) {
+        dispatch({
+          type: 'UPDATE_IMAGE_STATUS',
+          payload: {
+            id: image.id,
+            status: 'error',
+            error: error instanceof Error ? error.message : 'Conversion failed'
+    }
+        });
       }
     }
   };
 
+  const areAllImagesDone = images.length > 0 && images.every(img => img.status === 'done');
+  const isQueueProcessing = images.some(img => img.status === 'processing');
+  const hasIdleImages = images.some(img => img.status === 'idle');
+
   const handleDownloadAll = async () => {
-    const convertedImages = images.filter(
-      (img) => img.status === 'done' && img.convertedFile
-    );
-
-    if (convertedImages.length === 0) return;
-
     try {
-      const zipBlob = await createZipFile(convertedImages, outputFormat);
+      const zipBlob = await createZipFile(images, outputFormat);
       const url = URL.createObjectURL(zipBlob);
       const link = document.createElement('a');
       link.href = url;
@@ -51,65 +74,83 @@ function App() {
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Failed to create zip file:', error);
+      // Optionally show an error message to the user
     }
   };
 
-  const hasConvertibleImages = images.some((img) => img.status === 'idle');
-  const hasConvertedImages = images.some((img) => img.status === 'done');
-  const hasAnyImages = images.length > 0;
-
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Image Converter</h1>
-          <p className="mt-2 text-gray-600">
-            Convert your images to different formats with ease
-          </p>
-        </div>
+    <div className="container mx-auto px-4 py-8">
+      <div className="max-w-3xl mx-auto space-y-6">
+        <h1 className="text-2xl font-bold">Convert Images</h1>
 
-        <div className="space-y-6">
-          <DropZone />
-          
-          <div className="flex items-center justify-between">
-            <FormatSelector />
-            
-            <div className="flex gap-3">
-              {hasConvertibleImages && (
-                <button
-                  onClick={handleConvert}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+        <DropZone />
+        
+        {images.length > 0 && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-8">
+              <div className="flex items-center gap-2">
+                <span className="whitespace-nowrap">Convert to:</span>
+                <select
+                  value={outputFormat}
+                  onChange={(e) => dispatch({ 
+                    type: 'SET_OUTPUT_FORMAT', 
+                    payload: e.target.value as OutputFormat 
+                  })}
+                  className="block rounded-lg border border-gray-300 bg-white p-2 text-sm"
                 >
-                  Convert
-                </button>
-              )}
+                  <option value="image/jpeg">JPEG</option>
+                  <option value="image/png">PNG</option>
+                  <option value="image/gif">GIF</option>
+                  <option value="image/webp">WebP</option>
+                  <option value="image/avif">AVIF</option>
+                  <option value="image/heic">HEIC</option>
+                </select>
+              </div>
               
-              {hasConvertedImages && (
-                <button
-                  onClick={handleDownloadAll}
-                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-                >
-                  <Download className="w-4 h-4" />
-                  Download All
-                </button>
-              )}
+              <div className="flex items-center gap-4 ml-auto">
 
-              {hasAnyImages && (
+                {!areAllImagesDone ? (
+                  <button
+                    onClick={handleConvert}
+                    disabled={isQueueProcessing || !hasIdleImages}
+                    className={`inline-flex items-center px-4 py-2 rounded-lg transition-colors ${
+                      isQueueProcessing || !hasIdleImages
+                        ? 'bg-gray-400 cursor-not-allowed text-gray-200'
+                        : 'bg-blue-600 hover:bg-blue-700 text-white'
+                    }`}
+                  >
+                    <ReplaceAll className="w-4 h-4 mr-2" />
+                    Convert
+                  </button>
+                ) : ( 
+                  <button
+                    onClick={handleDownloadAll}
+                    disabled={!areAllImagesDone}
+                    className={`inline-flex items-center px-4 py-2 rounded-lg transition-colors ${
+                      areAllImagesDone
+                        ? 'bg-green-600 hover:bg-green-700 text-white'
+                        : 'bg-gray-400 cursor-not-allowed text-gray-200'
+                    }`}
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Download All
+                  </button>
+                )}
+
                 <button
-                  onClick={clearImages}
-                  className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                  onClick={() => dispatch({ type: 'CLEAR_IMAGES' })}
+                  className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
                 >
-                  Clear
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Clear All
                 </button>
-              )}
+              </div>
             </div>
+            
+            <ImageList />
           </div>
-
-          <ImageList />
-        </div>
+        )}
       </div>
     </div>
   );
 }
-
-export default App;

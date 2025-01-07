@@ -1,45 +1,67 @@
-import heic2any from 'heic2any';
+import type heic2any from 'heic2any';
 
-export async function getHEICConvertedURL(file: File): Promise<string> {
-  if (typeof window === 'undefined') {
-    throw new Error('heic2any can only be used in the browser');
-  }
+/**
+ * Checks if a file is a HEIC image based on its type or extension
+ */
+export function isHEIC(file: File): boolean {
+  return file.type === 'image/heic' || 
+         file.type === 'image/heif' || 
+         file.name.toLowerCase().endsWith('.heic');
+}
   
-  const heic2any = (await import('heic2any')).default;
-  if (!file || file.type !== 'image/heic') {
-    throw new Error('Provided file is not a HEIC image');
-  }
+/**
+ * Converts a HEIC file to a PNG File object
+ */
+export async function convertHEICToImage(file: File): Promise<File> {
+  console.log('Starting HEIC conversion...', {
+    name: file.name,
+    size: file.size,
+    type: file.type
+  });
 
   try {
-    const convertedBlob = await heic2any({
+    // Dynamically import heic2any only on client side
+    const heic2anyModule = await import('heic2any');
+    const converter = heic2anyModule.default;
+
+    const blob = await converter({
       blob: file,
-      toType: 'image/jpeg',
+      toType: 'image/png',
+      quality: 1
     });
 
-    if (Array.isArray(convertedBlob)) {
-      return URL.createObjectURL(convertedBlob[0]);
-    }
-    return URL.createObjectURL(convertedBlob);
+    // Convert single blob or array of blobs to a File  
+    const convertedBlob = Array.isArray(blob) ? blob[0] : blob;
+    const convertedFile = new File([convertedBlob], file.name.replace(/\.heic$/i, '.png'), {
+      type: 'image/png'
+    });
+
+    console.log('HEIC conversion complete:', {
+      originalSize: file.size, 
+      convertedSize: convertedFile.size,
+      convertedType: convertedFile.type
+    });
+
+    return convertedFile;
   } catch (error) {
-    console.error('Error converting HEIC file:', error);
-    throw error;  // Re-throw the error for the caller to handle
+    console.error('HEIC conversion error:', error);
+    throw new Error('Failed to convert HEIC image');
   }
 }
 
-// Function to check format and convert if necessary
+/**
+ * Function to check format and convert if necessary 
+ */
 export async function convertHEICIfNeeded(file: File): Promise<File> {
-  if (file.type === 'image/heic') {
-    console.log('HEIC format detected, converting using heic2any...');
-    const url = await getHEICConvertedURL(file);
-    const response = await fetch(url);
-    const blob = await response.blob();
-    return new File([blob], file.name.replace(/\.\w+$/, '.jpeg'), {
-      type: 'image/jpeg',
-    });
+  if (isHEIC(file)) {
+    return convertHEICToImage(file);
   }
   return file;
 }
 
+/**
+ * Checks browser support for HEIC format
+ */
 export async function isHEICSupported(): Promise<boolean> {
   return new Promise((resolve) => {
     const canvas = document.createElement('canvas');

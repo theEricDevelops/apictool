@@ -3,11 +3,11 @@
 import { Download, Trash2, AlertCircle } from 'lucide-react';
 import { useAppState } from '@/hooks/useAppState';
 import { 
-  formatBytes, 
-  getNewFileName, 
-  getNewFileSize,
-  getProcessingStage 
-} from '@/utils/utils';
+  getNewImageName, 
+  getImageProcessingStage 
+} from '@/utils/image-processing.utils';
+import { getNewFileSize } from '@/utils/file.utils';
+import { formatBytes } from '@/utils/utils';
 import type { ImageListProps } from '@/types/image.types';
 
 export const ImageList: React.FC<ImageListProps> = ({ onRemove }) => {
@@ -45,7 +45,7 @@ export const ImageList: React.FC<ImageListProps> = ({ onRemove }) => {
                 'Ready...'
               ) : item.status === 'processing' ? (
                 <span className="flex items-center gap-2">
-                  Processing... <span className="text-gray-400">({getProcessingStage(item.progress)})</span>
+                  Processing... <span className="text-gray-400">({getImageProcessingStage(item.progress)})</span>
                 </span>
               ) : (
                 getNewFileSize(item.file.size, item.convertedFile?.size ?? 0)
@@ -77,7 +77,7 @@ export const ImageList: React.FC<ImageListProps> = ({ onRemove }) => {
 
                 const link = document.createElement('a');
                 link.href = url;
-                link.download = getNewFileName(
+                link.download = getNewImageName(
                   item.file.name, 
                   state.outputFormat
                 );

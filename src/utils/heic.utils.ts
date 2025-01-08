@@ -1,20 +1,25 @@
-import type heic2any from 'heic2any';
-
 /**
  * Checks if a file is a HEIC image based on its type or extension
  */
-export function isHEIC(file: File): boolean {
-  return file.type === 'image/heic' || 
-         file.type === 'image/heif' || 
-         file.name.toLowerCase().endsWith('.heic');
+export function isHEIC(file: File | Blob): boolean {
+  const isHeicMimeType = file.type === 'image/heic' || file.type === 'image/heif';
+
+  if (isHeicMimeType) {
+    return true;
+  } 
+
+  return file instanceof File && file.name.toLowerCase().endsWith('.heic');  
 }
   
 /**
  * Converts a HEIC file to a PNG File object
  */
-export async function convertHEICToImage(file: File): Promise<File> {
+export async function convertHEICToImage(
+  file: File | Blob,
+  fileName: string = 'image.heic'
+): Promise<File> {
   console.log('Starting HEIC conversion...', {
-    name: file.name,
+    name: fileName,
     size: file.size,
     type: file.type
   });
@@ -32,9 +37,10 @@ export async function convertHEICToImage(file: File): Promise<File> {
 
     // Convert single blob or array of blobs to a File  
     const convertedBlob = Array.isArray(blob) ? blob[0] : blob;
-    const convertedFile = new File([convertedBlob], file.name.replace(/\.heic$/i, '.png'), {
-      type: 'image/png'
-    });
+    const convertedFile = new File(
+      [convertedBlob], 
+      fileName.replace(/\.(heic|heif)$/i, '.png') || fileName + '.png', 
+    { type: 'image/png' });
 
     console.log('HEIC conversion complete:', {
       originalSize: file.size, 

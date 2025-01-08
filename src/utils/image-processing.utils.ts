@@ -1,3 +1,6 @@
+import { isHEIC, convertHEICToImage } from '@/utils/heic.utils';
+import imageCompression from 'browser-image-compression';
+import { OutputFormat } from '@/types/image.types';
 
 /**
  * Image processing utility functions for color and pixel manipulation
@@ -48,4 +51,73 @@ export function calculateOptimalDimensions(
     width: Math.round(width * scale),
     height: Math.round(height * scale)
   };
+}
+
+export async function generateImagePreview(name: string, contents: Blob): Promise<string> {
+  if (typeof window === 'undefined') {
+      return '';
+  }
+
+  // Add validation logging
+  console.log('Generating preview for:', {
+      name,
+      type: contents.type,
+      size: contents.size,
+      isFile: contents instanceof File,
+      isBlob: contents instanceof Blob
+  });
+
+  if (isHEIC(contents)) {
+      const convertedFile = await convertHEICToImage(contents);
+      return URL.createObjectURL(convertedFile);
+  } else {
+      // Validate mime type
+      if (!contents.type.startsWith('image/')) {
+          console.error('Invalid file type:', contents.type);
+          throw new Error(`File type ${contents.type} is not supported`);
+      }
+
+      const options = {
+          maxSizeMB: 1,
+          maxWidthOrHeight: 400,
+          useWebWorker: true,
+          initialQuality: 0.8,
+          alwaysKeepResolution: true
+      };
+      
+      try {
+          const file = contents instanceof File ? contents : new File([contents], name, { type: contents.type });
+          const compressedFile = await imageCompression(file, options);
+          return URL.createObjectURL(compressedFile);
+      } catch (error) {
+          console.error('Error compressing image:', error);
+          // If compression fails, try returning the original file
+          return URL.createObjectURL(contents);
+      }
+  }
+}
+
+export function getImageExtension(format: OutputFormat): string {
+  const extensions: Record<OutputFormat, string> = {
+    'image/jpeg': '.jpg',
+    'image/png': '.png', 
+    'image/gif': '.gif',
+    'image/webp': '.webp',
+    'image/avif': '.avif',
+    'image/heic': '.heic'
+  };
+  return extensions[format];
+}
+
+export function getNewImageName(originalName: string, format: OutputFormat): string {
+  const baseName = originalName.substring(0, originalName.lastIndexOf('.')) || originalName;
+  return `${baseName}${getImageExtension(format)}`;
+}
+
+export function getImageProcessingStage(progress: number): string {
+  if (progress <= 10) return 'Initializing';
+  if (progress <= 20) return 'Preparing';
+  if (progress <= 80) return 'Compressing';
+  if (progress <= 95) return 'Converting';
+  return 'Finalizing';
 }

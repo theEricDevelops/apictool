@@ -1,17 +1,21 @@
+'use client';
+
 import imageCompression from 'browser-image-compression';
 import { OutputFormat } from '@/types/image.types';
-import { ConvertedFile } from '@/types/file.types';
+import { FileInfo } from '@/types/file.types';
 import { isHEIC, convertHEICToImage } from '@/utils/heic.utils';
 import { isSVG, convertSVGToImage } from '@/utils/svg.utils';
 import { reduceColors, calculateOptimalDimensions } from '@/utils/image-processing.utils';
+import { debugStep } from '@/utils/debug.utils';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export async function convertImage(
-  file: File,
+  contents: File | Blob,
+  fileName: string,
   format: OutputFormat,
   onProgress: (progress: number) => void
-): Promise<ConvertedFile> {
+): Promise<FileInfo> {
   const timing = {
     start: performance.now(),
     heicConversion: 0,
@@ -22,35 +26,48 @@ export async function convertImage(
   };
 
   try {
-    if (!file) {
-      throw new Error('No file provided for conversion');
-    }
-
-    console.log('Starting image conversion...', {
-      fileName: file.name,
-      fileType: file.type,
-      fileSize: file.size,
+    await debugStep('Initialization', {
+      fileName: fileName,
+      fileType: contents.type,
+      fileSize: contents.size,
       targetFormat: format
     });
+
+    if (!contents) {
+      throw new Error('No file provided for conversion');
+    }
     
     onProgress(0);
-    await delay(300);
     
     // Pre-conversion checks
-    let processedFile = file;
+    let originalFile = contents;
+    let processedFile = originalFile instanceof File 
+      ? originalFile 
+      : new File([originalFile], fileName, { type: originalFile.type });
+
+    await debugStep('Pre-conversion checks', {
+      isSVG: isSVG(originalFile),
+      isHEIC: isHEIC(originalFile)
+    });
     
-    if (isSVG(processedFile)) {
+    if (isSVG(originalFile)) {
       const svgStart = performance.now();
       console.log('Converting SVG to PNG first');
       onProgress(10);
-      processedFile = await convertSVGToImage(processedFile);
+      originalFile = await convertSVGToImage(originalFile, fileName);
+      processedFile = originalFile instanceof File 
+        ? originalFile 
+        : new File([originalFile], fileName, { type: originalFile.type });
       timing.svgConversion = performance.now() - svgStart;
       onProgress(20);
-    } else if (isHEIC(processedFile)) {
+    } else if (isHEIC(originalFile)) {
       const heicStart = performance.now();
       console.log('Converting HEIC to PNG first');
       onProgress(10);
-      processedFile = await convertHEICToImage(processedFile);
+      originalFile = await convertHEICToImage(originalFile);
+      processedFile = originalFile instanceof File 
+        ? originalFile 
+        : new File([originalFile], fileName, { type: originalFile.type });
       timing.heicConversion = performance.now() - heicStart;
       onProgress(20);
     }
@@ -60,12 +77,10 @@ export async function convertImage(
     await delay(300);
 
     // Compression stage
-    const shouldCompress = processedFile.size > 102400 && !isSVG(processedFile);
-    console.log('Compression needed:', shouldCompress);
+    const shouldCompress = originalFile.size > 102400 && !isSVG(originalFile);
 
     if (shouldCompress) {
       const compressionStart = performance.now();
-      console.log('Stage: Compressing');
       onProgress(20);
       
       const options = {
@@ -80,15 +95,28 @@ export async function convertImage(
         },
       };
 
-      if (processedFile.size / (1024 * 1024) < options.maxSizeMB) {
-        options.maxSizeMB = (processedFile.size / (1024 * 1024)) * 0.8;
-      }
+      await debugStep('Starting Compression', {
+        fileSize: originalFile.size,
+        compressionOptions: options
+      });
 
+      if (originalFile.size / (1024 * 1024) < options.maxSizeMB) {
+        options.maxSizeMB = (originalFile.size / (1024 * 1024)) * 0.8;
+      }
+      
       try {
         processedFile = await imageCompression(processedFile, options);
         timing.compression = performance.now() - compressionStart;
         console.log('Compression complete');
         onProgress(80);
+        
+        return {
+          name: fileName,
+          contents: processedFile,
+          format: processedFile.type,
+          url: URL.createObjectURL(processedFile),
+          size: processedFile.size
+        };
       } catch (compressionError) {
         console.error('Compression failed:', compressionError);
         // Continue with uncompressed file
@@ -102,11 +130,18 @@ export async function convertImage(
       }
     }
 
+    await debugStep('Compression Complete', {
+      isCompressed: processedFile.size < originalFile.size,
+      compressedSize: processedFile.size
+    });
+
     // Format conversion stage
     if (processedFile.type !== format) {
       const canvasStart = performance.now();
-      console.log('Format conversion needed:', processedFile.type, '->', format);
-      console.log('Stage: Format conversion');
+      await debugStep('Starting Format Conversion', { 
+        currentFormat: processedFile.type, 
+        targetFormat: format
+      });
       onProgress(85);
       
       try {
@@ -130,7 +165,6 @@ export async function convertImage(
         }
         
         onProgress(90);
-        await delay(200);
 
         const blob = await new Promise<Blob>((resolve, reject) => {
           canvas.toBlob(
@@ -146,36 +180,44 @@ export async function convertImage(
         timing.canvasConversion = performance.now() - canvasStart;
         timing.total = performance.now() - timing.start;
 
-        console.log('Conversion complete for', processedFile.name, timing);
-        
+        await debugStep('Conversion Complete', { timing });
+
         onProgress(100);
         const url = URL.createObjectURL(blob);
-        console.log('Created blob URL:', url);
         
-        return { url, size: blob.size, blob, format };
+        await debugStep('URL Created', { url });
         
-      } catch (conversionError: unknown) {
-        console.error('Format conversion failed:', conversionError);
+        return {
+          name: fileName,
+          size: blob.size,
+          contents: blob,
+          format: format,
+          url: url
+        };
+        
+      } catch (conversionError) {
+        await debugStep('Conversion Error', { conversionError });
         if (conversionError instanceof Error) {
           throw new Error(`Format conversion failed: ${conversionError.message}`);
         }
         throw new Error('Format conversion failed');
       }
     } else {
-      console.log('No format conversion needed');
+      await debugStep('No Format Conversion Needed');
       onProgress(100);
       const url = URL.createObjectURL(processedFile);
-      console.log('Created blob URL:', url);
+      await debugStep('URL Created', { url });
       
       return { 
-        url,
+        name: fileName,
         size: processedFile.size,
-        blob: processedFile,
-        format: processedFile.type as OutputFormat
+        contents: processedFile,
+        format: processedFile.type,
+        url: url
       };
     }
   } catch (error) {
-    console.error('Image conversion failed:', error);
+    await debugStep('Fatal Error', { error });
     throw error instanceof Error ? error : new Error('Failed to convert image');
   }
 }

@@ -1,10 +1,13 @@
 'use client';
 
 import React, { createContext, useReducer, useCallback } from 'react';
-import { generatePreview } from '@/utils/utils';
+import { generateImagePreview } from '@/utils/image-processing.utils';
 import { ImageFile } from '@/types/image.types';
 import type { AppState, Action } from '@/types/state.types'
 import { DEFAULT_USER_TIER } from '@/constants/tier.constants';
+import { ConversionStatus, FileStatus } from '@/types/state.types';
+import { CONVERSION_STATUS, FILE_STATUS } from '@/constants/states.constants';
+import { blobToFile } from '@/utils/file.utils';
 
 const initialState: AppState = {
   user: null,
@@ -20,6 +23,14 @@ const initialState: AppState = {
   conversionStatus: 'idle',
 };
 
+function isValidConversionStatus(status: string): status is ConversionStatus {
+  return CONVERSION_STATUS.includes(status as ConversionStatus);
+}
+
+function isValidImageStatus(status: string): status is FileStatus {
+  return FILE_STATUS.includes(status as FileStatus);
+}
+
 const reducer = (state: AppState, action: Action): AppState => {
   switch (action.type) {
     case 'SET_OUTPUT_FORMAT': {
@@ -30,9 +41,21 @@ const reducer = (state: AppState, action: Action): AppState => {
     }
 
     case 'SET_CONVERSION_STATUS': {
+      if (!isValidConversionStatus(action.payload)) {
+        console.error('Invalid conversion status:', action.payload);
+        return state;
+      }
+
+      console.log('🔄 Conversion status changing:', {
+        from: state.conversionStatus,
+        to: action.payload
+      });
+      
       return {
         ...state,
         conversionStatus: action.payload,
+        // Automatically set canConvert based on status
+        canConvert: ['idle', 'completed', 'error'].includes(action.payload)
       };
     }
 
@@ -43,17 +66,23 @@ const reducer = (state: AppState, action: Action): AppState => {
       };
     }
 
-    case 'INCREMENT_ACTIVE_CONVERSIONS':
+    case 'UPDATE_ACTIVE_CONNECTIONS': {
+      const decrementedConversions = Math.max(0, state.activeConversions - 1);
+      console.log('⏬ Decrementing active conversions:', {
+        from: state.activeConversions,
+        to: decrementedConversions
+      });
+      
       return {
         ...state,
-        activeConversions: state.activeConversions + 1,
+        activeConversions: decrementedConversions,
+        // Auto-resume if we were paused and now have capacity
+        conversionStatus: state.conversionStatus === 'paused' && 
+                         decrementedConversions < state.settings.maxConcurrentProcessing
+                         ? 'running'
+                         : state.conversionStatus
       };
-    
-    case 'DECREMENT_ACTIVE_CONVERSIONS':
-      return {
-        ...state,
-        activeConversions: state.activeConversions - 1,
-      };
+    }
 
     case 'ADD_IMAGES': {
       const newImages = action.payload.map((image: ImageFile) => {
@@ -101,24 +130,37 @@ const reducer = (state: AppState, action: Action): AppState => {
     }
 
     case 'UPDATE_IMAGE_STATUS': {
+      if (!isValidImageStatus(action.payload.status)) {
+        console.error('Invalid image status:', action.payload.status);
+        return state;
+      }
+      
       console.log('Updating QueueItem:', {
         id: action.payload.id,
         status: action.payload.status,
         convertedFile: action.payload.convertedFile,
-        error: action.payload.error
+        error: action.payload.error,
+        conversionStatus: state.conversionStatus
       });
+
+      const updatedImages = state.images.map(img =>
+        img.id === action.payload.id
+          ? { ...img, 
+              status: action.payload.status,
+              convertedFile: action.payload.convertedFile,
+              error: action.payload.error 
+            }
+          : img
+      );
+
+      const allProcessed = updatedImages.every(img => 
+        ['done', 'error'].includes(img.status)
+      );
       
       return {
         ...state,
-        images: state.images.map(img => 
-          img.id === action.payload.id
-            ? { ...img, 
-                status: action.payload.status,
-                convertedFile: action.payload.convertedFile,
-                error: action.payload.error 
-              }
-            : img
-        ),
+        images: updatedImages,
+        conversionStatus: allProcessed ? 'complete' : state.conversionStatus
       };
     }
 
@@ -128,7 +170,12 @@ const reducer = (state: AppState, action: Action): AppState => {
           URL.revokeObjectURL(img.convertedFile.url);
         }
       });
-      return { ...state, images: [] };
+      return { 
+        ...state, 
+        images: [],
+        conversionStatus: 'idle',
+        activeConversions: 0
+      };
     }
     default: {
       console.warn('Unknown action type:', action as Action);
@@ -153,7 +200,11 @@ export const StateProvider: React.FC<{children: React.ReactNode}> = ({ children 
 
       await Promise.all(action.payload.map(async (image: ImageFile) => {
         try {
-          const preview = await generatePreview(image.file.contents);
+          if (!(image.file.contents instanceof File) &&
+               (image.file.contents instanceof Blob)) {
+                image.file.contents = blobToFile(image.file.contents, image.file.name);
+          }
+          const preview = await generateImagePreview(image.file.name, image.file.contents);
           const id = crypto.randomUUID();
 
           const queueItem: ImageFile = {

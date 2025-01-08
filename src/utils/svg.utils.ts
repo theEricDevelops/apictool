@@ -1,10 +1,11 @@
+
 /**
  * Converts an SVG file to a raster image (PNG) File object.
  * Uses a canvas to render the SVG and convert it to a PNG with proper dimensions.
  */
-export async function convertSVGToImage(file: File): Promise<File> {
+export async function convertSVGToImage(file: File | Blob, fileName: string): Promise<File> {
   console.log('Starting SVG conversion...', {
-    name: file.name,
+    name: fileName,
     size: file.size,
     type: file.type
   });
@@ -43,7 +44,7 @@ export async function convertSVGToImage(file: File): Promise<File> {
           }
           
           // Convert blob to File
-          const convertedFile = new File([blob], file.name.replace('.svg', '.png'), {
+          const convertedFile = new File([blob], fileName.replace('.svg', '.png'), {
             type: 'image/png'
           });
           
@@ -77,6 +78,12 @@ export async function convertSVGToImage(file: File): Promise<File> {
 /**
  * Checks if a file is an SVG based on its type.
  */
-export function isSVG(file: File): boolean {
-  return file.type === 'image/svg+xml';
+export function isSVG(file: File | Blob): boolean {
+  const isSVGMimeType = file.type === 'image/svg+xml';
+
+  if (isSVGMimeType) {
+    return true;
+  } 
+
+  return file instanceof File && file.name.toLowerCase().endsWith('.svg');  
 }

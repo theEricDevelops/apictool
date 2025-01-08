@@ -5,3 +5,10 @@ export const CONVERSION_STATUS = [
     'error', 
     'complete'
 ];
+
+export const FILE_STATUS = [
+    'idle', 
+    'processing', 
+    'done', 
+    'error'
+]

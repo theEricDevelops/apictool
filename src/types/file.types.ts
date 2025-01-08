@@ -1,24 +1,20 @@
-// Generic types for file handling
-export interface ConvertedFile {
-  url: string;
-  size: number;
-  blob: Blob;
+import { FileStatus } from "@/types/state.types";
+
+export interface FileInfo {
+  contents: Blob;
   format: string;
+  name: string;
+  size: number;
+  url: string;
 }
 
 export interface QueueItem {
   id: string;
-  file: {
-    contents: File;
-    format: string;
-    name: string;
-    size: number;
-    url: string;
-  };
+  file: FileInfo;
   preview: string;
-  status: 'idle' | 'processing' | 'done' | 'error';
+  status: FileStatus
   progress: number;
-  convertedFile?: ConvertedFile;
+  convertedFile?: FileInfo;
   error?: string;
 }
 

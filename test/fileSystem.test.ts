@@ -1,5 +1,5 @@
 import { describe, expect, test, jest } from '@jest/globals';
-import { readFile, writeFile, fileExists } from '@/utils/file-system.utils';
+import { readFile, writeFile, fileExists } from '@/utils/file.utils';
 import fs from 'fs/promises';
 
 // Mock fs/promises module

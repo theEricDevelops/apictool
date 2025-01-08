@@ -1,7 +1,7 @@
 import { BlobWriter, ZipWriter } from '@zip.js/zip.js';
 import { OutputFormat } from '@/types/image.types';
 import { QueueItem } from '@/types/file.types';
-import { getNewFileName } from '@/utils/utils';
+import { getNewImageName } from '@/utils/image-processing.utils';
 
 export async function createZipFile(images: QueueItem[], outputFormat: OutputFormat): Promise<Blob> {
   const zipWriter = new ZipWriter(new BlobWriter('application/zip'));
@@ -23,7 +23,7 @@ export async function createZipFile(images: QueueItem[], outputFormat: OutputFor
     for (const image of convertedImages) {
       if (!image.convertedFile) continue;
       
-      const blob = image.convertedFile.blob;
+      const blob = image.convertedFile.contents;
       const blobHash = await hashBlob(blob);
 
       if (processedBlobs.has(blobHash)) {
@@ -32,7 +32,7 @@ export async function createZipFile(images: QueueItem[], outputFormat: OutputFor
       }
       processedBlobs.add(blobHash);
 
-      let fileName = getNewFileName(image.file.name, outputFormat);
+      let fileName = getNewImageName(image.file.name, outputFormat);
 
       console.log('Original File name:', image.file.name);
       console.log('Generated File name:', fileName);

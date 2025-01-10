@@ -16,11 +16,12 @@ const initialState: AppState = {
   canConvert: true,
   settings: {
     compressionQuality: 80,
-    maxConcurrentProcessing: 3,
+    maxConcurrentProcessing: 1,
   },
   userTier: DEFAULT_USER_TIER,
   activeConversions: 0,
   conversionStatus: 'idle',
+  conversionQueue: [],
 };
 
 function isValidConversionStatus(status: string): status is ConversionStatus {
@@ -59,6 +60,15 @@ const reducer = (state: AppState, action: Action): AppState => {
       };
     }
 
+    case 'SET_CONVERSION_QUEUE': {
+      console.log('🔄 Setting conversion queue:', action.payload);
+
+      return {
+        ...state,
+        conversionQueue: action.payload,
+      };
+    }
+
     case 'SET_CAN_CONVERT': {
       return {
         ...state,
@@ -66,21 +76,26 @@ const reducer = (state: AppState, action: Action): AppState => {
       };
     }
 
-    case 'UPDATE_ACTIVE_CONNECTIONS': {
-      const decrementedConversions = Math.max(0, state.activeConversions - 1);
-      console.log('⏬ Decrementing active conversions:', {
-        from: state.activeConversions,
-        to: decrementedConversions
+    case 'UPDATE_ACTIVE_CONVERSIONS': {
+      const delta = action.payload;
+      const newActiveConversions = typeof delta === 'number' 
+      ? state.activeConversions + delta 
+      : delta;
+
+      const updatedActiveConversions = Math.max(0, newActiveConversions);
+      console.log('⏬ Updating active conversions:', {
+      from: state.activeConversions,
+      to: updatedActiveConversions
       });
-      
+
       return {
-        ...state,
-        activeConversions: decrementedConversions,
-        // Auto-resume if we were paused and now have capacity
-        conversionStatus: state.conversionStatus === 'paused' && 
-                         decrementedConversions < state.settings.maxConcurrentProcessing
-                         ? 'running'
-                         : state.conversionStatus
+      ...state,
+      activeConversions: updatedActiveConversions,
+      // Auto-resume if we were paused and now have capacity
+      conversionStatus: state.conversionStatus === 'paused' && 
+               updatedActiveConversions < state.settings.maxConcurrentProcessing
+               ? 'running'
+               : state.conversionStatus
       };
     }
 
@@ -101,6 +116,7 @@ const reducer = (state: AppState, action: Action): AppState => {
       return {
         ...state,
         images: [...state.images, ...newImages],
+        conversionQueue: [...state.conversionQueue, ...newImages],
       };
     }
 
@@ -108,6 +124,7 @@ const reducer = (state: AppState, action: Action): AppState => {
       return {
         ...state,
         images: [...state.images, action.payload],
+        conversionQueue: [...state.conversionQueue, action.payload ]
       };
     }
     

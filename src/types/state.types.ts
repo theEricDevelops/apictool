@@ -19,16 +19,18 @@ export interface AppState {
     userTier?: UserTier;
     activeConversions: number;
     conversionStatus: ConversionStatus;
+    conversionQueue: Array<ImageFile>;
 }
 
 export type Action =
   | { type: 'SET_OUTPUT_FORMAT'; payload: OutputFormat }
   | { type: 'SET_CAN_CONVERT'; payload: boolean }
-  | { type: 'UPDATE_ACTIVE_CONNECTIONS'; payload: number }
+  | { type: 'UPDATE_ACTIVE_CONVERSIONS'; payload: number }
   | { type: 'ADD_IMAGES'; payload: ImageFile[] }
   | { type: 'ADD_IMAGE'; payload: ImageFile }
   | { type: 'REMOVE_IMAGE'; payload: string }
   | { type: 'UPDATE_IMAGE_PROGRESS'; payload: { id: string; progress: number } }
   | { type: 'UPDATE_IMAGE_STATUS'; payload: { id: string; status: FileStatus; convertedFile?: FileInfo; error?: string }}
   | { type: 'CLEAR_IMAGES' }
-  | { type: 'SET_CONVERSION_STATUS'; payload: ConversionStatus };
+  | { type: 'SET_CONVERSION_STATUS'; payload: ConversionStatus }
+  | { type: 'SET_CONVERSION_QUEUE'; payload: Array<ImageFile> };

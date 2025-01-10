@@ -1,0 +1,97 @@
+  const resetActiveConversions = useCallback(() => {
+    console.log('Resetting active conversions');
+    activeConversions.current = 0;
+  }, []);
+
+  const handleFormatChange = useCallback(() => {
+    dispatch({ type: 'SET_OUTPUT_FORMAT', payload: selectedFormat });
+  }, [dispatch, selectedFormat]);
+
+    const checkForPausedStatus = useCallback(async (): Promise<void> => {
+      if (state.conversionStatus === 'paused') {
+        await debugStep('⏸️ Conversion paused, waiting...', {
+          remainingImages: images.filter(img =>
+            img.status === 'idle' && !img.convertedFile
+          ).length
+        });
+      }
+  
+      await new Promise<void>(resolve => {
+        const checkStatus = setInterval(() => {
+          if (state.conversionStatus === 'processing') {
+            clearInterval(checkStatus);
+            resolve();
+          }
+        }, CONVERSION_POLL_INTERVAL);
+      });
+      return;
+    }, [state.conversionStatus, images]);
+  
+    const checkConversionComplete = useCallback(async (): Promise<boolean> => {
+      const pendingImages = images.filter(img =>
+        img.status === 'idle' && !img.convertedFile
+      );
+  
+      if (pendingImages.length === 0) {
+        await debugStep('🏁 All images processed', {
+          finalStatuses: images.map(img => ({
+            id: img.id,
+            name: img.file.name,
+            status: img.status,
+            hasConvertedFile: !!img.convertedFile
+          }))
+        });
+        return true;
+      }
+      return false;
+    }, [images]);
+  
+    const handleConversionCompletion = useCallback(async () => {
+      const hasUnprocessedImages = images.some(img =>
+        ['idle', 'error'].includes(img.status)
+      );
+  
+      if (hasUnprocessedImages) {
+        const newStatus: ConversionStatus =
+          state.conversionStatus === 'paused' ? 'completed' : 'paused';
+        updateConversionStatus(newStatus);
+  
+        await debugStep('🏁 ProcessImages finished. Final status:', images.map(img => ({
+            id: img.id,
+            name: img.file.name,
+            status: img.status
+          }))
+        );
+      }
+    }, [images, state.conversionStatus, updateConversionStatus]);
+
+      async function startNextConversion(): Promise<void> {
+    
+        if (activeConversions.current >= MAX_CONCURRENT_CONVERSIONS) {
+          await debugStep('⏸️ Max conversions reached, waiting...', {
+            current: activeConversions.current,
+            max: MAX_CONCURRENT_CONVERSIONS
+          });
+          return;
+        }
+    
+        // Find the next image to convert
+        const nextImage = conversionQueue.find(img =>
+          img.status === 'idle' && !img.convertedFile
+        );
+    
+        if (!nextImage) {
+          await debugStep('No more images to convert', {
+            activeConversions: Array.from(conversionQueue.keys())
+          });
+          return;
+        }
+    
+        await debugStep('▶️ Starting next image:', {
+          imageId: nextImage.id,
+          activeCount: activeConversions.current,
+          maxConcurrent: MAX_CONCURRENT_CONVERSIONS
+        });
+    
+        convertSingleImage(nextImage, selectedFormat);
+      }

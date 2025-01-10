@@ -30,24 +30,32 @@ export default function ConverterPage() {
   }, [cleanupAllBlobs, isMounted]);
 
   const handleConversion = async () => {
+    console.log('Convert button clicked');
     const selectedFormat = formatRef.current?.getSelectedFormat();
-    if (!selectedFormat) return;
+    if (!selectedFormat) {
+      console.error('No format selected');
+      return;
+    }
 
+    console.log('Selected format:', selectedFormat);
     dispatch({ type: 'SET_OUTPUT_FORMAT', payload: selectedFormat });
     await processImages();
   };
 
   const handleClearImages = () => {
+    console.log('Clear images button clicked');
     cleanupAllBlobs();
     dispatch({ type: 'CLEAR_IMAGES' });
   };
 
   const handleRemoveImage = (imageId: string) => {
+    console.log(`Remove image button clicked for imageId: ${imageId}`);
     cleanupBlob(imageId);
     dispatch({ type: 'REMOVE_IMAGE', payload: imageId });
   };
 
   const handleDownloadAll = async () => {
+    console.log('Download all button clicked');
     try {
       const zipBlob = await createZipFile(images, outputFormat);
       const url = URL.createObjectURL(zipBlob);
@@ -72,11 +80,13 @@ export default function ConverterPage() {
             <div className="flex items-center justify-between">
               <FormatSelector ref={formatRef} />
               <div className="flex items-center gap-4">
-                { userTier === 'tier1' && images.length > 1 && (
-                  <div className="text-sm text-gray-500">
-                    ⚡️ Upgrade to convert multiple images simultaneously
-                  </div>
-                )}
+                
+                    <div className="text-sm text-gray-500 flex flex-col items-end">
+                    {userTier === 'tier1' && images.length > 1 && (
+                      <span className="text-red-500">⚡️ Upgrade to convert multiple images simultaneously</span>
+                    )}
+                    <span>{state.conversionStatus}</span>
+                    </div>
                 <ConversionButtons
                   onConvert={handleConversion}
                   onDownload={handleDownloadAll}

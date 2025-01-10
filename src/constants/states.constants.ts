@@ -12,3 +12,6 @@ export const FILE_STATUS = [
     'done', 
     'error'
 ]
+
+export const CONVERSION_POLL_INTERVAL = 100; //ms
+export const CONVERSION_TIMEOUT = 30000; // 30 seconds

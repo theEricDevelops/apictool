@@ -23,7 +23,7 @@ class DebugController {
   private constructor() {
     // Initialize console command
     if (typeof window !== 'undefined') {
-        window.go = () => this.proceed();
+        window.go = () => window.debug.proceed();
         window.debug = {
           proceed: () => this.proceed(),
           skip: () => this.skip(),
